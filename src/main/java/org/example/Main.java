@@ -1,8 +1,12 @@
 package org.example;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.*;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -13,40 +17,55 @@ public class Main {
     public static void main(String[] args) throws IOException {
 
         // Creating server
-        final ServerSocket server = new ServerSocket(8080);
-        System.out.println("Listening for connection on port 8080.....");
+        int serverPort = 8080;
+        HttpServer server = HttpServer.create(new InetSocketAddress(serverPort), 0);
+        server.createContext("/", new MyHandler());
+        server.setExecutor(null); // creates a default executor
+        server.start();
+        System.out.println("Server started on port " + serverPort);
 
 
 
-        while (true){
-
-
-            //Getting connect info
-            Socket clientSoceket = server.accept();
-            InputStreamReader inputStreamReade = new InputStreamReader(clientSoceket.getInputStream());
-            BufferedReader reader = new BufferedReader(inputStreamReade);
-            String line  = reader.readLine();
-            while (!line.isEmpty()) {
-                System.out.println(line);
-                line = reader.readLine();
-            }
-
-
-            try (Socket socket = server.accept()) {
-
-
-
-                Date today = new Date();
-                String httpResponse = "HTTP/1.1 200 OK\r\n" +
-                        "Content-Type: text/html\r\n\r\n";
-                socket.getOutputStream().write(httpResponse.getBytes("UTF-8"));}
-
-
-
-        }
 
 
     }
-
-
 }
+
+
+
+    class MyHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+
+            if (exchange.getRequestMethod().equalsIgnoreCase("OPTIONS")) {
+                exchange.sendResponseHeaders(204, -1);
+                return;
+            }
+
+            if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
+                // Read the JSON data from the request body
+                InputStream inputStream = exchange.getRequestBody();
+                ObjectMapper objectMapper = new ObjectMapper();
+                JsonNode jsonNode = objectMapper.readTree(inputStream);
+
+                // Handle the JSON data (jsonNode)
+                System.out.println("Received data: " + jsonNode);
+
+                // Send a response (you can customize this as needed)
+                String response = "Data received successfully!";
+                exchange.sendResponseHeaders(200, response.length());
+                OutputStream outputStream = exchange.getResponseBody();
+                outputStream.write(response.getBytes());
+                outputStream.close();
+            } else {
+                // Method not allowed
+                exchange.sendResponseHeaders(405, 0);
+            }
+            exchange.close();
+        }
+    }

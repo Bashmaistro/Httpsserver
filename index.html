@@ -7,6 +7,7 @@
 
     
 <title>freeCodeCamp Surver Form</title>
+
 <h1 id="title" class="title">freeCodeCamp Surver Form</h1>
 <p id="description" class="description">Thank you for taking the time to help us improve the platform</p>
 </head>
@@ -92,11 +93,61 @@
         <textarea name="textarea" id="text" placeholder="Enter your comment here..."></textarea>
     </div>
     <div class="describe">
-        <button id="submit" class="submot" type="submit" >Submit</button>
+        <button id="submit" class="submit" type="submit" >Submit</button>
     </div>
     <div class="describe"></div>
     
     </form>
+
+ <script>
+     document.addEventListener("DOMContentLoaded", function() {
+         const form = document.getElementById("survey-form");
+
+         form.addEventListener("submit", function(event) {
+             event.preventDefault(); // Prevents the default form submission
+
+             const formData = new FormData(form);
+             const jsonObject = {};
+
+             // Get all elements with the 'describe' class
+             const describeElements = document.querySelectorAll('.describe');
+
+             // Loop through each 'describe' element to collect its data
+             describeElements.forEach(element => {
+                 const input = element.querySelector('input, select, textarea');
+                 if (input) {
+                     const key = input.id || input.name;
+                     const value = input.value;
+                     jsonObject[key] = value;
+                 }
+             });
+
+             const jsonData = JSON.stringify(jsonObject);
+
+             // Test: Log the JSON data to the console
+             console.log(jsonData);
+
+             // Send form data to the server
+             fetch("http://localhost:8080", {
+                 method: "POST",
+                 headers: {
+                     "Content-Type": "application/json"
+                 },
+                 body: jsonData
+             })
+                 .then(response => {
+                     if (response.ok) {
+                         console.log("Form submitted successfully!");
+                     } else {
+                         console.error("Form submission failed.");
+                     }
+                 })
+                 .catch(error => {
+                     console.error("Error:", error);
+                 });
+         });
+     });
+ </script>
     
     
 
